@@ -17,7 +17,7 @@ def new_chat(request, item_pk):
     chats = Chat.objects.filter(item=item).filter(members__in=[request.user.id])
 
     if chats:
-        pass # redirect to chat
+        return redirect('chat:detail', pk=chats.first().id)
 
     if request.method == 'POST':
         form = ChatMessageForm(request.POST)
@@ -48,4 +48,28 @@ def inbox(request):
 
     return render(request, 'chat/inbox.html', {
         'chats': chats
+    })
+
+@login_required
+def detail(request, pk):
+    chat = Chat.objects.filter(members__in=[request.user.id]).get(pk=pk)
+
+    if request.method == 'POST':
+        form = ChatMessageForm(request.POST)
+
+        if form.is_valid():
+            chat_message = form.save(commit=False)
+            chat_message.chat = chat
+            chat_message.created_by = request.user
+            chat_message.save()
+
+            chat.save()
+
+            return redirect('chat:detail', pk=pk)
+    else:
+        form = ChatMessageForm()
+
+    return render(request, 'chat/detail.html', {
+        'chat': chat,
+        'form': form
     })
